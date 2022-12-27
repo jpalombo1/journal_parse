@@ -8,6 +8,8 @@ import numpy as np
 
 @dataclass
 class Entry:
+    """Journal Entry object with number for year, total index, weekday, date, rating and actual content."""
+
     idx: int
     num: int
     weekday: str
@@ -15,7 +17,8 @@ class Entry:
     rating: float = 0.0
     entry: str = "Entry (): \nRating: /10\nSummary:\nInfo/Learn:\nFeelings: \nStories: "
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
+        """Re-initialized entry based on filled in parameters."""
         self.entry = (
             f"Entry {self.num} ({self.idx}) {self.weekday} {self.date}\n"
             + "\n".join(self.entry.split("\n")[1:])
@@ -33,40 +36,55 @@ class Entry:
         )
 
 
+## GETTER FUNCTIONS FOR ENTRY ##
 def get_idx(line: str) -> int:
+    """Get index from line, will be in form of 'words blah blah (index) blah blah'"""
     return int(line.split("(")[-1].split(")")[0])
 
 
 def get_num(line: str) -> int:
+    """Get number from line, will be in form of 'words blah blah Entry: number blah blah'"""
     return int(line.split("Entry ")[-1].split(" ")[0])
 
 
 def get_rating(line: str) -> float:
+    """Get rating from line, will be in form of 'words blah blah Rating: rating/10 blah blah'"""
     val = line.split("Rating: ")[-1].split("/")[0]
     return float(val) if val.replace(".", "", 1).isdigit() else 0.0
 
 
 def get_weekday(line: str) -> str:
+    """Get number from line, will be in form of 'words blah blah: weekday blah blah'"""
     return line.split(": ")[-1].split(" ")[0]
 
 
 def get_date_line_str(line: str) -> str:
+    """Get date string from line, will be in form of 'words blah blah day date_str\n"""
     return line.split("day ")[-1].split("\n")[0]
 
 
 def get_date_str(date: datetime) -> str:
+    """Convert datetime date back to string."""
     return date.strftime("%m/%d/%Y")
 
 
 def get_date_obj(date: str) -> datetime:
+    """Convert string date to datetime object."""
     return datetime.strptime(date, "%m/%d/%Y")
 
 
 def get_date_line_obj(line: str) -> datetime:
-    return datetime.strptime(get_date_line_str(line), "%m/%d/%Y")
+    """Convert string date on line to datetime object."""
+    return get_date_obj(get_date_line_str(line))
 
 
 def make_entry(entry_text: str) -> Entry:
+    """Make an entry from already made journals / line of text.
+
+    Split text into lines, Then get idx num weekday date by lines that begin with Entry,
+    then get rating by lines that begin with Rating.
+    Only use first of each field then make entry from it.
+    """
     lines = entry_text.split("\n")
     idx = [get_idx(line) for line in lines if "Entry " in line][0]
     num = [get_num(line) for line in lines if "Entry " in line][0]
@@ -79,8 +97,14 @@ def make_entry(entry_text: str) -> Entry:
     return entry
 
 
+## CHECKING/ FIXING FUNCTIONS ##
 def check_entries(entries: list[Entry]):
-    """Check if entries/dates increment appropriately."""
+    """Check if entries/dates increment appropriately.
+
+    For each feature, index entry for it. Make sure each dates 1 day apart and less than previous.
+    Make sure weekdays follow cycle calculated by DAY # % 7 starting at Friday since 1st day of year was Friday.
+    Also make sure each entry/ index increments by 1.
+    """
     ACTUAL_WEEKDAYS = [
         "Friday",
         "Saturday",
@@ -121,6 +145,18 @@ def check_entries(entries: list[Entry]):
 
 
 def set_vals(type: str, entries: list[Entry]) -> list[Entry]:
+    """Function to automatically fix values that were set wrong.
+
+    Gets old value. For dates just add number of entries days to it from first day.
+    For other just add number of entires past. Then modify the entry.
+
+    Args:
+        type (str): Type of val in entry to be set (date, num, idx)
+        entries (list[Entry]): List of entries
+
+    Returns:
+        list[Entry]: Modified list of entries fixed for index/date inaccuracies.
+    """
     new_entries = []
     for num_entries, entry in enumerate(entries):
         old_val = entry.__dict__[type]
@@ -138,7 +174,10 @@ def set_vals(type: str, entries: list[Entry]) -> list[Entry]:
 
 
 def fix_journals(entries: list[Entry]) -> list[Entry]:
-    """Wrapper method to fix journals for all types of order errors."""
+    """Wrapper method to fix journals for all types of order errors.
+
+    Set correct vals for date number and index, then save to new file.
+    """
     entries = set_vals(type="date", entries=entries)
     entries = set_vals(type="num", entries=entries)
     entries = set_vals(type="idx", entries=entries)
@@ -152,19 +191,24 @@ def fix_journals(entries: list[Entry]) -> list[Entry]:
     return entries
 
 
-def new_journals():
+def new_journals() -> None:
+    """Make new journal template by setting first entry based on actual date,index, number, weekday, then make 365 entries like it.
+
+    Call fix method to update index,number, dates correctly.
+    """
     entry = Entry(idx=1, num=2074, weekday="Wednesday", date="01/01/2022")
     entries = [Entry(**entry.__dict__) for _ in range(365)]
     fix_journals(entries)
 
 
+## METRICS FUNCTIONS FOR ENTRY DATA ##
 def get_ratings(entries: list[Entry]) -> list[float]:
     """Gather ratings throughout year."""
     return [entry.rating for entry in entries]
 
 
 def get_work(entries: list[Entry]) -> list[str]:
-    """Get lines involving work"""
+    """Get lines involving work and parse for word after word to get idea of which work done."""
     return [
         f"{idx}.{line.split('work ')[-1].split(',')[0]}"
         for idx, entry in enumerate(entries)
@@ -174,7 +218,7 @@ def get_work(entries: list[Entry]) -> list[str]:
 
 
 def get_vocabulary(all_content: str, count: int) -> dict[str, int]:
-    """Get top used words from all content."""
+    """Get top used words from all content. Strip non char letters for spaces, then get words by split by spaces, get counts of unique words."""
 
     def strip_chars(word: str) -> str:
         """Strip content of punctuation, special chars."""
