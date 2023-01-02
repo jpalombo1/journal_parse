@@ -69,4 +69,9 @@ ACTIVTIES = [
     "run",
     "switch",
     "spreadsheet",
+    "sleep",
+    "nap",
 ]
+
+# Projects
+PROJECTS = ["esce", "c3ewd", "wicked crow", "dragnet", "wicked crow", "aces", "carl"]

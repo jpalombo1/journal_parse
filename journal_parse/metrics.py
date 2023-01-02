@@ -38,6 +38,6 @@ def get_vocabulary(all_content: str, count: int) -> dict[str, int]:
     return top_uwc
 
 
-def word_counts(words: list[str], all_content: str):
+def word_counts(words: list[str], all_content: str) -> list[int]:
     """Given list of strings give count of number of mentions."""
     return [all_content.count(word) for word in words]

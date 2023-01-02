@@ -12,8 +12,7 @@ def get_all_content(input_path: Path) -> str:
 
 
 def output_journals(entries: List[Entry], output: Path) -> None:
-    """Reverse entreis so last entry at top, then get all content and write to file."""
-    entries.reverse()
-    all_content = "\n\n".join([entry.entry for entry in entries])
+    """Reverse entries so last entry at top, then get all content and write to file."""
+    all_content = "\n\n".join([entry.entry for entry in reversed(entries)])
     with open(output, "w") as new_journal:
         new_journal.write(all_content)

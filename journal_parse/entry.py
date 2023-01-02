@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
 
 
 @dataclass
@@ -16,19 +15,13 @@ class Entry:
 
     def __post_init__(self) -> None:
         """Re-initialized entry based on filled in parameters."""
-        self.entry = (
-            f"Entry {self.num} ({self.idx}) {self.weekday} {self.date}\n"
-            + "\n".join(self.entry.split("\n")[1:])
-        )
+        self.dateobj = get_date_obj(self.date)
+        self.modify_entry()
 
-    def modify_entry(self, type: str, new_val: Any):
-        if type not in self.__dict__.keys():
-            return
-
-        new_val = get_date_str(new_val) if type == "date" else new_val
-        self.__dict__[type] = new_val
+    def modify_entry(self) -> None:
+        """Change entry string depending on updated class field values, then use rest of the entry after Entry line."""
         self.entry = (
-            f"Entry {self.num} ({self.idx}) {self.weekday} {self.date}\n"
+            f"Entry {self.num} ({self.idx}): {self.weekday} {self.date}\n"
             + "\n".join(self.entry.split("\n")[1:])
         )
 
@@ -39,15 +32,22 @@ def make_entry(entry_text: str) -> Entry:
     Split text into lines, Then get idx num weekday date by lines that begin with Entry,
     then get rating by lines that begin with Rating.
     Only use first of each field then make entry from it.
+
+    Each entry with format:
+    Entry <entry_num> (<index>): <Weekday> <date MM/dd/yyy>
+    Rating <rating>/10:
+    <rest of entry text>
     """
     lines = entry_text.split("\n")
-    idx = [get_idx(line) for line in lines if "Entry " in line][0]
-    num = [get_num(line) for line in lines if "Entry " in line][0]
-    weekday = [get_weekday(line) for line in lines if "Entry " in line][0]
-    date = [get_date_line_str(line) for line in lines if "Entry " in line][0]
-    rating = [get_rating(line) for line in lines if "Rating" in line][0]
+    entry_line = [line for line in lines if "Entry " in line][0]
+    rating_line = [line for line in lines if "Rating" in line][0]
     entry = Entry(
-        entry=entry_text, idx=idx, num=num, rating=rating, weekday=weekday, date=date
+        entry=entry_text,
+        idx=get_idx(entry_line),
+        num=get_num(entry_line),
+        rating=get_rating(rating_line),
+        weekday=get_weekday(entry_line),
+        date=get_date_line_str(entry_line),
     )
     return entry
 
@@ -86,8 +86,3 @@ def get_date_str(date: datetime) -> str:
 def get_date_obj(date: str) -> datetime:
     """Convert string date to datetime object."""
     return datetime.strptime(date, "%m/%d/%Y")
-
-
-def get_date_line_obj(line: str) -> datetime:
-    """Convert string date on line to datetime object."""
-    return get_date_obj(get_date_line_str(line))
